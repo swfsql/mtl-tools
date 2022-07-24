@@ -60,13 +60,12 @@ jobs:
         run: |
           set -e
           cd replacer/
-          trunk build --release
+          trunk build --release --public-url mtl-tools/replacer/
       - name: Move and optimize assets
         run: |
           set -e
           mkdir -p publish/{replacer,}
-          mv -vn replacer/dist/index.html publish/replacer/
-          mv -vn replacer/dist/* publish/
+          mv -vn replacer/dist/* publish/replacer/
           find publish/ \
             -name \*.wasm \
             -prune \
