@@ -11,9 +11,6 @@ env:
   CARGO_NET_GIT_FETCH_WITH_CLI: true
 jobs:
   build:
-    # in case this is a binary release, we make sure to wait
-    # for any requirement
-    needs: ["create-release-on-tags"]
     runs-on: ubuntu-latest
     steps:
       # rust compiler for running tests
