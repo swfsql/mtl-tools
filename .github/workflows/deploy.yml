@@ -65,7 +65,8 @@ jobs:
         run: |
           set -e
           mkdir -p publish/{replacer,}
-          mv replacer/dist/* publish/replacer
+          mv -vn replacer/dist/index.html publish/replacer/
+          mv -vn replacer/dist/* publish/
           find publish/ \
             -name \*.wasm \
             -prune \
