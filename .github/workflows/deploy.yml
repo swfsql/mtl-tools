@@ -64,7 +64,7 @@ jobs:
       - name: Move and optimize assets
         run: |
           set -e
-          mkdir -p publish/{replacer}
+          mkdir -p publish/{replacer,}
           mv replacer/dist/* publish/replacer
           find publish/ \
             -name \*.wasm \
