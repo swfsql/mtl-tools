@@ -1,0 +1,108 @@
+name: Deploy
+on:
+  push:
+  branches:
+    - main
+  # tags:
+  # pull_request:
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+jobs:
+  # based on
+  # https://raw.githubusercontent.com/BurntSushi/ripgrep/master/.github/workflows/release.yml
+  # in case a tag was set, a binary release will be made
+  create-release-on-tags:
+    name: Create a new release on tags
+    runs-on: ubuntu-latest
+    # env:
+    # Set to force version number, e.g., when no tag exists.
+    # RG_VERSION: TEST-0.0.0
+    outputs:
+      rg_version: ${{ env.RG_VERSION }}
+    steps:
+      - name: Get the release version from the tag
+        shell: bash
+        if: env.RG_VERSION == ''
+        run: |
+          # Apparently, this is the right way to get a tag name. Really?
+          #
+          # See: https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
+          echo "RG_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "version is: ${{ env.RG_VERSION }}"
+
+  # for the cargo actions, because the rust project is not on the root of the
+  # repository, we use a marcopolo's fork of the actions-rs/cargo@v1 :
+  # marcopolo/cargo@a527bf4d534717ff4424a84446c5d710f8833139
+
+  build:
+    # in case this is a binary release, we make sure to wait
+    # for any requirement
+    needs: ["create-release-on-tags"]
+    runs-on: ubuntu-latest
+    steps:
+      # rust compiler for running tests
+      - uses: actions/checkout@v2
+      - name: Install latest stable (for linux-gnu)
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+          components: rustfmt, clippy
+          # override: true
+      # rust compiler for creating binaries
+      - name: Install latest stable (for wasm)
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          components: rustfmt, clippy
+          # override: true
+      # caching (cargo registry)
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ubuntu-latest-stable-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
+      # caching (cargo index)
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ubuntu-latest-stable-cargo-index-${{ hashFiles('**/Cargo.toml') }}
+      - name: Install Trunk
+        run: |
+          set -e
+          curl -L https://github.com/thedodd/trunk/releases/latest/download/trunk-x86_64-unknown-linux-gnu.tar.gz | tar xzf -
+          mkdir trunk_bin
+          mv trunk trunk_bin/trunk
+          echo "`pwd`/trunk_bin" >> $GITHUB_PATH
+      # based on
+      # https://github.com/rustwasm/walrus/blob/9d6c9de432d6a97478dc76ebdf18aed51584c3af/.github/workflows/main.yml#L56
+      - name: Install binaryen
+        run: |
+          set -e
+          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_109/binaryen-version_109-x86_64-linux.tar.gz | tar xzf -
+          echo "`pwd`/binaryen-version_109/bin" >> $GITHUB_PATH
+      - name: Trunk Build (Replacer)
+        run: |
+          set -e
+          cd replacer/
+          trunk build --release
+      - name: Move and optimize assets
+        run: |
+          set -e
+          mkdir -p publish/{replacer}
+          mv -r replacer/dist/* publish/replacer
+          find publish/ \
+            -name \*.wasm \
+            -prune \
+            -exec wasm-opt -Oz -o "{}" "{}" \;
+      - name: Frontend Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.ACTIONS_PERSONAL_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./publish
+          keep_files: false
