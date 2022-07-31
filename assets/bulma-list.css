@@ -1,0 +1,8 @@
+.navbar-item {
+    border-left: 1px solid #485fc700;
+}
+
+.list-item.is-highlighted,
+.navbar-item.is-highlighted {
+    border-left: 1px solid #485fc7;
+}
