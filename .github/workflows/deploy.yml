@@ -34,7 +34,7 @@ jobs:
           toolchain: nightly
           target: wasm32-unknown-unknown
           components: rustfmt, clippy
-          # override: true
+          override: true
       
       - name: Install wasm target
         run: |
