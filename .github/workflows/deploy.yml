@@ -19,19 +19,19 @@ jobs:
     steps:
       # rust compiler for running tests
       - uses: actions/checkout@v2
-      - name: Install latest stable (for linux-gnu)
+      - name: Install latest nightly (for linux-gnu)
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           target: x86_64-unknown-linux-gnu
           components: rustfmt, clippy
           # override: true
       
       # rust compiler for creating binaries
-      - name: Install latest stable (for wasm)
+      - name: Install latest nightly (for wasm)
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           target: wasm32-unknown-unknown
           components: rustfmt, clippy
           # override: true
